@@ -1,0 +1,27 @@
+[Unit]
+Description=Fulcrum Prometheus Exporter
+After=network.target
+
+[Service]
+User=bitcoin
+Group=bitcoin
+
+Type=simple
+Environment=FULCRUM_STATS_URL=http://127.0.0.1:8080/stats
+Environment=REFRESH_SECONDS=30
+Environment=METRICS_PORT=50039
+ExecStart=/home/ago/src/fulcrum-prometheus-exporter/env/bin/python /home/ago/src/fulcrum-prometheus-exporter/fulcrum-monitor.py
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=2s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+ProtectSystem=full
+NoNewPrivileges=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target
