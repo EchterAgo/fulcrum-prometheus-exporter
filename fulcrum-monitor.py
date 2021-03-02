@@ -16,8 +16,9 @@ import sys
 import urllib
 
 from datetime import datetime
+from wsgiref.simple_server import make_server
 
-from prometheus_client import start_http_server, Gauge, Counter, Info
+from prometheus_client import make_wsgi_app, Gauge, Counter, Info
 
 logger = logging.getLogger("fulcrum-exporter")
 
@@ -113,7 +114,6 @@ PROCESS_TIME = Counter("fulcrum_exporter_process_time", "Time spent processing m
 
 
 FULCRUM_STATS_URL = os.environ.get("FULCRUM_STATS_URL", "http://127.0.0.1:8080/stats")
-REFRESH_SECONDS = float(os.environ.get("REFRESH_SECONDS", "300"))
 METRICS_ADDR = os.environ.get("METRICS_ADDR", "")  # empty = any address
 METRICS_PORT = int(os.environ.get("METRICS_PORT", "50039"))
 RETRIES = int(os.environ.get("RETRIES", 5))
@@ -232,8 +232,6 @@ def exception_count(e: Exception) -> None:
 
 
 def main():
-    http_started = False
-
     # Set up logging to look similar to bitcoin logs (UTC).
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%SZ"
@@ -244,27 +242,30 @@ def main():
     # Handle SIGTERM gracefully.
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    while True:
-        refresh_start = datetime.now()
+    app = make_wsgi_app()
 
-        # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
-        try:
-            refresh_metrics()
-        except Exception as e:
-            logger.debug("Refresh failed", exc_info=True)
-            exception_count(e)
+    last_refresh = None
 
-        duration = datetime.now() - refresh_start
-        PROCESS_TIME.inc(duration.total_seconds())
-        logger.info(f"Refresh took {duration} seconds, sleeping for {REFRESH_SECONDS} seconds")
+    def refresh_app(*args, **kwargs):
+        nonlocal last_refresh
+        process_start = datetime.now()
 
-        if not http_started:
-            # Start up the server to expose the metrics.
-            start_http_server(addr=METRICS_ADDR, port=METRICS_PORT)
-            logger.info(f"Started HTTP server on {METRICS_ADDR}:{METRICS_PORT}")
-            http_started = True
+        if not last_refresh or (process_start - last_refresh).total_seconds() > 1: # Limit updates to every 1 seconds
+            try:
+                refresh_metrics()
+            except Exception as e:
+                logger.debug("Refresh failed", exc_info=True)
+                exception_count(e)
 
-        time.sleep(REFRESH_SECONDS)
+            duration = datetime.now() - process_start
+            PROCESS_TIME.inc(duration.total_seconds())
+            logger.info("Refresh took %s seconds", duration)
+            last_refresh = process_start
+
+        return app(*args, **kwargs)
+
+    httpd = make_server(METRICS_ADDR, METRICS_PORT, refresh_app)
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":
