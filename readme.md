@@ -1,6 +1,22 @@
 # Fulcrum Prometheus Exporter
 
-## README 
+## Table of Contents
+
+1. [Introduction](#introduction)
+2. [Why Fork?](#why-fork)
+3. [Features](#features)
+4. [Quick Start](#quick-start)
+5. [Configuration Options](#configuration-options)
+    - [Command-Line Arguments](#command-line-arguments)
+    - [Environment Variables](#environment-variables)
+    - [Hardcoded Defaults](#hardcoded-defaults)
+    - [Example Usage](#example-usage)
+6. [Configuring Prometheus to Scrape Metrics](#configuring-prometheus-to-scrape-metrics)
+    - [Steps](#steps)
+    - [Example Configuration](#example-configuration)
+7. [Contributing](#contributing)
+8. [License](#license)
+
 
 ### Introduction
 This repository is a fork of the [original Fulcrum Prometheus Exporter](https://github.com/EchterAgo/fulcrum-prometheus-exporter) by Axel Gembe. The original project appears to be abandoned, and this fork aims to continue its development and maintenance.
