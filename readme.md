@@ -71,6 +71,32 @@ To run the script with custom settings:
 python fulcrum-monitor.py --fulcrum-stats-url http://localhost:8080/stats --metrics-addr 0.0.0.0 --metrics-port 8080 --retries 3 --timeout 20 --log-level DEBUG
 ```
 
+## Configuring Prometheus to Scrape Metrics
+
+To collect metrics from this exporter, you'll need to configure your Prometheus instance. Below are the steps to do so:
+
+### Steps:
+
+1. **Install Prometheus**: If you haven't installed Prometheus yet, you can download it from [here](https://prometheus.io/download/).
+
+2. **Edit Configuration File**: Open your `prometheus.yml` file in a text editor.
+
+3. **Add Scrape Config**: Add a new scrape configuration for the Fulcrum Prometheus Exporter.
+
+### Example Configuration:
+
+Here's a sample `prometheus.yml` configuration snippet to scrape metrics from this exporter:
+
+```
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'fulcrum_exporter'
+    static_configs:
+      - targets: ['localhost:50039']  # Replace with the METRICS_ADDR and METRICS_PORT you set
+```
+
 
 #### Contributing
 We welcome contributions from the community. Please read the [contribution guidelines](CONTRIBUTING.md) for more information.
