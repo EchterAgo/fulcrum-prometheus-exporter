@@ -18,15 +18,15 @@ This repository is a fork of the [original Fulcrum Prometheus Exporter](https://
 #### Quick Start
 1. Clone this repository.
    ```
-   git clone https://github.com/<your_username>/fulcrum-prometheus-exporter.git
+   git clone https://github.com/federicociro/fulcrum-prometheus-exporter.git
    ```
 2. Install the required Python packages.
    ```
-   pip install -r [requirements.txt](https://github.com/federicociro/fulcrum-prometheus-exporter/blob/main/requirements.txt)
+   pip install -r requirements.txt
    ```
 3. Run the exporter.
    ```
-   python [fulcrum-monitor.py](https://github.com/federicociro/fulcrum-prometheus-exporter/blob/main/fulcrum-monitor.py)
+   python fulcrum-monitor.py
    ```
 
 #### Contributing
