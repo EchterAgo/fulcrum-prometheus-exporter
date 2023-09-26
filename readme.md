@@ -33,4 +33,4 @@ This repository is a fork of the [original Fulcrum Prometheus Exporter](https://
 We welcome contributions from the community. Please read the [contribution guidelines](CONTRIBUTING.md) for more information.
 
 #### License
-This project is licensed under the [BSD 3-Clause License](https://github.com/federicociro/fulcrum-prometheus-exporter/blob/main/LICENSE).
+This project is licensed under the [BSD 3-Clause License](https://github.com/federicociro/fulcrum-prometheus-exporter/blob/master/LICENSE).
