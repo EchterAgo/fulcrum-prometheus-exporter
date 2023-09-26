@@ -14,6 +14,7 @@ import os
 import signal
 import sys
 import urllib
+import argparse
 
 from datetime import datetime
 from wsgiref.simple_server import make_server
@@ -22,6 +23,12 @@ from prometheus_client import make_wsgi_app, Gauge, Counter, Info
 
 logger = logging.getLogger("fulcrum-exporter")
 
+FULCRUM_STATS_URL = os.environ.get("FULCRUM_STATS_URL", "http://127.0.0.1:8080/stats")
+METRICS_ADDR = os.environ.get("METRICS_ADDR", "")  # empty = any address
+METRICS_PORT = int(os.environ.get("METRICS_PORT", "50039"))
+RETRIES = int(os.environ.get("RETRIES", 5))
+TIMEOUT = int(os.environ.get("TIMEOUT", 30))
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 # Create Prometheus metrics to track Fulcrum stats.
 BITCOIND_EXTANT_REQUEST_CONTEXTS = Gauge("fulcrum_bitcoind_extant_request_contexts", "Extant bitcoind request contexts")
@@ -111,14 +118,6 @@ SUBSMGR_SUBS_LOAD_FACTOR = Gauge("fulcrum_subsmgr_subs_load_factor", "Subscripti
 EXPORTER_ERRORS = Counter("fulcrum_exporter_errors",
                           "Number of errors encountered by the exporter", labelnames=["type"])
 PROCESS_TIME = Counter("fulcrum_exporter_process_time", "Time spent processing metrics from Fulcrum")
-
-
-FULCRUM_STATS_URL = os.environ.get("FULCRUM_STATS_URL", "http://127.0.0.1:8080/stats")
-METRICS_ADDR = os.environ.get("METRICS_ADDR", "")  # empty = any address
-METRICS_PORT = int(os.environ.get("METRICS_PORT", "50039"))
-RETRIES = int(os.environ.get("RETRIES", 5))
-TIMEOUT = int(os.environ.get("TIMEOUT", 30))
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 
 def refresh_metrics() -> None:
@@ -230,8 +229,26 @@ def exception_count(e: Exception) -> None:
     exception_name = err_type.__module__ + "." + err_type.__name__
     EXPORTER_ERRORS.labels(**{"type": exception_name}).inc()
 
-
+def parse_args():
+    parser = argparse.ArgumentParser(description='Fulcrum Prometheus Exporter')
+    parser.add_argument('--fulcrum-stats-url', default=os.environ.get("FULCRUM_STATS_URL", "http://127.0.0.1:8080/stats"), help='Fulcrum stats URL')
+    parser.add_argument('--metrics-addr', default=os.environ.get("METRICS_ADDR", ""), help='Metrics address')
+    parser.add_argument('--metrics-port', type=int, default=int(os.environ.get("METRICS_PORT", "50039")), help='Metrics port')
+    parser.add_argument('--retries', type=int, default=int(os.environ.get("RETRIES", 5)), help='Number of retries')
+    parser.add_argument('--timeout', type=int, default=int(os.environ.get("TIMEOUT", 30)), help='Timeout in seconds')
+    parser.add_argument('--log-level', default=os.environ.get("LOG_LEVEL", "INFO"), help='Log level')
+    return parser.parse_args()
+    
 def main():
+    args = parse_args()
+    
+    FULCRUM_STATS_URL = args.fulcrum_stats_url
+    METRICS_ADDR = args.metrics_addr
+    METRICS_PORT = args.metrics_port
+    RETRIES = args.retries
+    TIMEOUT = args.timeout
+    LOG_LEVEL = args.log_level
+
     # Set up logging to look similar to bitcoin logs (UTC).
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%SZ"
