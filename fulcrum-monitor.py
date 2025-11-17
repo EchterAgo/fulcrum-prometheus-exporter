@@ -11,6 +11,7 @@ import json
 import logging
 import time
 import os
+import re
 import signal
 import sys
 import urllib
@@ -95,7 +96,7 @@ STORAGE_CACHES_LRU_APPROX_HITS = Gauge("fulcrum_storage_caches_lru_approx_hits",
 STORAGE_CACHES_LRU_APPROX_MISSES = Gauge("fulcrum_storage_caches_lru_approx_misses",
                                          "LRU Cache approximate misses", labelnames=["cachetype"])
 STORAGE_CACHES_MERKLEHEADERS = Gauge("fulcrum_storage_caches_merkleheaders", "Merkleheader cache size", labelnames=["type"])
-STORAGE_MERGE_CALLS = Gauge("fulcrum_storage_merge_calls", "Merged storage calls")
+STORAGE_MERGE_CALLS = Gauge("fulcrum_storage_merge_calls", "Merged storage calls", labelnames=["type"])
 
 
 SUBSMGR_ACTIVE_SUBS_COUNT = Gauge("fulcrum_subsmgr_active_subs_count", "Number of active client subscriptions")
@@ -119,6 +120,9 @@ METRICS_PORT = int(os.environ.get("METRICS_PORT", "50039"))
 RETRIES = int(os.environ.get("RETRIES", 5))
 TIMEOUT = int(os.environ.get("TIMEOUT", 30))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
+
+_MERGE_CALLS_RE = re.compile(r"^merge calls(?: \((.*?)\))?$")
 
 
 def refresh_metrics() -> None:
@@ -185,7 +189,7 @@ def refresh_metrics() -> None:
     STORAGE_DB_SHARED_WRITE_BUFFER_MANAGER.labels("memoryusage").set(
         stor["DB Shared Write Buffer Manager"]["memory usage"])
 
-    for database in ["blkinfo", "meta", "scripthash_history", "scripthash_unspent", "undo", "utxoset"]:
+    for database in stor["DB Stats"].keys():
         STORAGE_DB_STATS_CUR_SIZE_ALL_MEM_TABLES_BYTES.labels(database).set(
             stor["DB Stats"][database]["rocksdb.cur-size-all-mem-tables"])
         STORAGE_DB_STATS_ESTIMATE_TABLE_READERS_MEM_BYTES.labels(database).set(
@@ -208,7 +212,8 @@ def refresh_metrics() -> None:
     STORAGE_CACHES_MERKLEHEADERS.labels("count").set(stor["caches"]["merkleHeaders_Size"])
     STORAGE_CACHES_MERKLEHEADERS.labels("bytes").set(stor["caches"]["merkleHeaders_SizeBytes"])
 
-    STORAGE_MERGE_CALLS.set(stor["merge calls"])
+    for mct in [(m.group(1), value) for key, value in stor.items() if (m := _MERGE_CALLS_RE.match(key))]:
+        STORAGE_MERGE_CALLS.labels(mct[0] if mct[0] else "default").set(mct[1])
 
     subm = stats["SubsMgr"]
     SUBSMGR_ACTIVE_SUBS_COUNT.set(subm["Num. active client subscriptions"])
